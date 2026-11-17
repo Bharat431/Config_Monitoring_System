@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CodeIgniter 4 Application Starter
 
 ## What is CodeIgniter?
@@ -161,3 +162,6 @@ webhook events and stored `change_events.payload` rows.
 `ChangeEvent::toArray()` and actual outgoing webhook bodies against it;
 `tests/integration/ChangePipelineTest.php` covers the full pipeline including
 debounce precision, backoff bounds, queue ownership and DLQ retry.
+=======
+# Config_Monitoring_System
+>>>>>>> 834dc087577c2af68704fb482cd62001b873730f
