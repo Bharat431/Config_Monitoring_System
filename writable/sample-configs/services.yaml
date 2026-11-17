@@ -1,0 +1,22 @@
+# Demo service topology (watched by Config Monitor)
+services:
+  api:
+    image: registry.example.com/api:1.7537.0
+    replicas: 3
+    resources:
+      cpu: 500m
+      memory: 512Mi
+    env:
+      LOG_LEVEL: info
+  worker:
+    image: registry.example.com/worker:1.0.0
+    replicas: 1
+    env:
+      LOG_LEVEL: info
+ingress:
+  enabled: true
+  host: api.example.com
+  tls: true
+feature_flags:
+  dark_mode: false
+  beta_search: false

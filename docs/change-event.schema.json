@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://config-monitor.local/schemas/change-event-1.0.json",
+  "title": "Config Monitor change event (contract v1)",
+  "description": "Canonical JSON payload emitted to webhooks and stored in change_events.payload.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "source",
+    "version",
+    "type",
+    "file",
+    "path",
+    "timestamp",
+    "changes",
+    "summary",
+    "hash",
+    "trace_id",
+    "error",
+    "meta"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "source": { "const": "config-monitor" },
+    "version": { "const": "1.0" },
+    "type": {
+      "enum": ["created", "modified", "deleted", "parse_error"]
+    },
+    "file": { "type": "string", "minLength": 1 },
+    "path": { "type": "string", "minLength": 1 },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "hash": { "type": ["string", "null"] },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "error": { "type": ["string", "null"] },
+    "summary": { "$ref": "#/$defs/summary" },
+    "changes": { "$ref": "#/$defs/changes" },
+    "meta": { "$ref": "#/$defs/meta" }
+  },
+  "$defs": {
+    "typeName": {
+      "enum": ["null", "boolean", "integer", "number", "string", "array", "object"]
+    },
+    "value": true,
+    "bucket": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/value" }
+    },
+    "oldNew": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["old", "new"],
+      "properties": {
+        "old": { "$ref": "#/$defs/value" },
+        "new": { "$ref": "#/$defs/value" }
+      }
+    },
+    "typeChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["oldType", "newType", "old", "new"],
+      "properties": {
+        "oldType": { "$ref": "#/$defs/typeName" },
+        "newType": { "$ref": "#/$defs/typeName" },
+        "old": { "$ref": "#/$defs/value" },
+        "new": { "$ref": "#/$defs/value" }
+      }
+    },
+    "changes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "removed", "updated", "type_changes"],
+      "properties": {
+        "added": { "$ref": "#/$defs/bucket" },
+        "removed": { "$ref": "#/$defs/bucket" },
+        "updated": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/oldNew" }
+        },
+        "type_changes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/typeChange" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "updated", "removed", "type_changes"],
+      "properties": {
+        "added": { "type": "integer", "minimum": 0 },
+        "updated": { "type": "integer", "minimum": 0 },
+        "removed": { "type": "integer", "minimum": 0 },
+        "type_changes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["monitored_file_id"],
+      "properties": {
+        "monitored_file_id": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

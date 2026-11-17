@@ -1,0 +1,82 @@
+name: config-monitor
+
+x-app-env: &app-env
+  CI_ENVIRONMENT: production
+  app.baseURL: ${APP_BASE_URL:-http://localhost:8080/}
+  database.defaultGroup: mysql
+  database.mysql.hostname: db
+  database.mysql.database: configmon
+  database.mysql.username: configmon
+  database.mysql.password: ${MYSQL_PASSWORD:-configmon}
+  database.mysql.port: "3306"
+  CONFIGMON_ALLOWED_EXTENSIONS: env,json,yaml,yml,properties
+  CONFIGMON_WATCH_ROOTS: /app/writable/sample-configs
+  CONFIGMON_POLL_INTERVAL_MS: "2000"
+  CONFIGMON_DEBOUNCE_MS: "750"
+  CONFIGMON_LOG_TO_STDERR: "true"
+  CONFIGMON_API_KEY: ${CONFIGMON_API_KEY:-}
+  CONFIGMON_ALLOW_PRIVATE_WEBHOOKS: "true"
+
+x-app-build: &app-build
+  build: .
+  image: config-monitor:local
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: configmon
+      MYSQL_USER: configmon
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-configmon}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD:-rootpassword} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    <<: *app-build
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["php", "spark", "migrate", "--all"]
+    restart: "no"
+
+  web:
+    <<: *app-build
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  watcher:
+    <<: *app-build
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["php", "spark", "monitor:run", "--shard", "1", "--shards", "1"]
+    restart: unless-stopped
+
+  # Scale with: docker compose up -d --scale worker=3
+  worker:
+    <<: *app-build
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["php", "spark", "monitor:work"]
+    restart: unless-stopped
+
+volumes:
+  db-data:
