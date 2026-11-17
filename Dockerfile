@@ -35,8 +35,12 @@ RUN composer install \
 
 COPY . .
 
+# `.dockerignore` excludes writable/database/*.db and .env, so a container
+# starts from an empty SQLite database. Create the schema in the image itself;
+# otherwise every /api/* call dies with "no such table" (500) in production.
 RUN mkdir -p writable/cache writable/database writable/debugbar writable/logs \
              writable/session writable/uploads \
+    && php spark migrate --all \
     && chown -R www-data:www-data writable
 
 # Structured logs go to stderr so `docker logs` shows one JSON object per line.

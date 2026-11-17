@@ -234,17 +234,20 @@ class StatsService
         $queueCounts = ['pending' => 0, 'processing' => 0, 'delivered' => 0, 'dead' => 0];
         $dlqOpen     = 0;
         $filesTotal  = 0;
+        $lastScan = null;
+        $watcher  = null;
+        $worker   = null;
+
         try {
             $queueCounts = $this->queue->counts();
             $dlqOpen     = $this->deadLetters->unresolvedCount();
             $filesTotal  = $this->files->where('enabled', 1)->countAllResults();
+            $lastScan    = $this->state->get('last_scan');
+            $watcher     = $this->state->get('watcher_heartbeat');
+            $worker      = $this->state->get('worker_heartbeat');
         } catch (Throwable) {
             $dbOk = false;
         }
-
-        $lastScan    = $this->state->get('last_scan');
-        $watcher     = $this->state->get('watcher_heartbeat');
-        $worker      = $this->state->get('worker_heartbeat');
         $lastScanAge = is_array($lastScan) && isset($lastScan['at']) ? (time() - (int) strtotime((string) $lastScan['at'])) : null;
         $watcherAge  = is_array($watcher) && isset($watcher['at']) ? (time() - (int) strtotime((string) $watcher['at'])) : null;
         $workerAge   = is_array($worker) && isset($worker['at']) ? (time() - (int) strtotime((string) $worker['at'])) : null;

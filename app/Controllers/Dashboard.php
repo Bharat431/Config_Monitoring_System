@@ -10,7 +10,11 @@ class Dashboard extends BaseController
     public function index(): string
     {
         $config = service('monitorConfig');
-        $base   = rtrim($this->request->getUri()->getBaseURL(), '/') . '/';
+
+        // Keep API/asset URLs same-origin. The framework default baseURL is
+        // http://localhost:8080/, which breaks the dashboard when deployed to
+        // Render (the browser would call localhost instead of the live host).
+        $base = '/';
 
         $boot = [
             'baseUrl'        => $base,
